@@ -1,0 +1,110 @@
+<html>
+<head>
+<title>
+MPR Classical Playlist
+</title>
+
+<script src="js-yaml.js"></script>
+
+<script type="text/javascript">
+
+function id(x) {
+	if(typeof x == "string") return document.getElementById(x);
+	return x;
+}
+
+function startup() {
+	setInterval("doUpdate();", 61000);
+	doUpdate();
+}
+
+function doUpdate() {
+	var now = new Date();
+	id("today").innerHTML = now.toDateString();
+	id("stat").innerHTML = "PENDING...";
+	id("now").innerHTML = "["+now.toTimeString()+"]";
+
+	var r = new XMLHttpRequest();
+	r.open("GET", "mcpdata/current.yaml", false);
+	r.send(null);
+
+	id("stat").innerHTML = ""+r.status+": "+r.statusText;
+	id("now").innerHTML = now.toUTCString();
+	id("then").innerHTML = r.getResponseHeader("Date");
+	id("when").innerHTML = r.getResponseHeader("Last-Modified");
+
+	if(r.status == 200) {
+		id("pieces").innerHTML = "";
+		var doc = jsyaml.load(r.responseText);
+
+		for(var i = 0; i < doc.length; ++i) {
+			addRow(doc[i]);
+		}
+	}
+}
+
+function createRow(a) {
+	var newrow = document.createElement("tr");
+
+	for(var i = 0; i < a.length; ++i) {
+		var newcell = document.createElement("td");
+		newcell.setAttribute("style", "border:solid 1px;");
+		if(typeof a[i] == "string") {
+			newcell.appendChild(document.createTextNode(a[i]));
+		} else if(typeof a[i] == "undefined") {
+			// nothing here
+		} else {
+			newcell.appendChild(a[i]);
+		}
+		newrow.appendChild(newcell);
+	}
+
+	return newrow;
+}
+
+function addRow(p) {
+	// extract portions of p record into a row array.
+	var perfs = document.createDocumentFragment();
+
+	if(p.performers != undefined) {
+		for(var i = 0; i < p.performers.length; ++i) { 
+			perfs.appendChild(document.createTextNode(p.performers[i]));
+			perfs.appendChild(document.createElement("br"));
+		}
+	}
+
+	id("pieces").appendChild(createRow([p.time, p.title, p.composer, p.publication, perfs]));
+}
+
+</script>
+</head>
+
+<body onload="startup();">
+
+<div id="top">
+<h1><span id="today"></span> [<span id="stat"></span>]</h1>
+<h2>Client time at last update: <span id="now"></span></h2>
+<h2>Server time at last update: <span id="then"></span></h2>
+<h2>YAML Last modification date: <span id="when"></span></h2>
+</div>
+<hr />
+<div id="middle">
+<table style="border:solid 1px; border-collapse: collapse;">
+<thead>
+<tr><td><b>Start time</b></td><td><b>Piece Title</b></td><td><b>Composer</b></td><td><b>Publisher</b></td><td><b>Performers</b></td></tr>
+</thead>
+<tbody id="pieces">
+</tbody>
+</table>
+</div>
+<hr />
+<div id="bottom">
+<p><a href="http://minnesota.publicradio.org/radio/services/cms/pieces_played/">Current Original Playlist Page</a>
+</p>
+<p><a href="mcpdata/">Playlist Histories</a>
+</p>
+</div>
+
+</body>
+</html>
+
